@@ -1,0 +1,1 @@
+/usr/bin/cc -g   CMakeFiles/Web.dir/main.c.o  -o Web 
