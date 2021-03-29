@@ -10,7 +10,7 @@
 #include<signal.h>
 #include<fcntl.h>
 
-#define CONNMAX 1000
+#define CONNMAX 2
 #define BYTES 1024
 
 
@@ -60,8 +60,10 @@ int main(int argc, char *argv[]) {
         startServer(PORT);
         for (int i = 0; i < CONNMAX; i++)
             clients[i] = -1;
-        printf("Server started at port no. %s%s%s with root directory as %s%s%s\n", "\033[92m", PORT, "\033[0m", "\033[92m",
-               ROOT, "\033[0m");
+        fflush(stdout);
+        printf("Server started at port no. %s\n", PORT);
+        fflush(stdout);
+        printf("TEST2");
     } else {
         connectToServer("127.0.0.1", PORT);
     }
@@ -69,7 +71,6 @@ int main(int argc, char *argv[]) {
     // ACCEPT connections
     while (1) {
         addrlen = sizeof(clientaddr);
-
         // Wait for a connection an open a new socket
         clients[slot] = accept(listenfd, (struct sockaddr *) &clientaddr, &addrlen);
 
@@ -81,7 +82,6 @@ int main(int argc, char *argv[]) {
 
         while (clients[slot] != -1) slot = (slot + 1) % CONNMAX;
     }
-
     return 0;
 }
 
@@ -164,6 +164,7 @@ void consoleRespond(int n) {
     else    // message received
     {
         printf("%s", mesg);
+        printf("TEST");
         char reply[] = "I'm connected.";
         int bytesize = sizeof(reply);
         write(clients[n], reply, bytesize);
@@ -187,7 +188,10 @@ int connectToServer(char ip[], char *port) {
 
     server.sin_addr.s_addr = inet_addr("127.0.0.1");
     server.sin_family = AF_INET;
-    int intPort = sscanf(port, "%d", &intPort);
+    int intPort;
+    sscanf(port, "%d", &intPort);
+
+    // htons() accepts port as an integer
     server.sin_port = htons(intPort);
 
     //Connect to remote server
