@@ -23,6 +23,8 @@ void startServer(char *);
 
 void respond(int);
 
+void consoleRespond(int);
+
 int main(int argc, char *argv[]) {
     struct sockaddr_in clientaddr; // Structure describing an Internet socket address
     socklen_t addrlen;              // client address length
@@ -31,7 +33,7 @@ int main(int argc, char *argv[]) {
     //Default Values PATH = ~/ and PORT=10000
     char PORT[6];
     ROOT = getenv("PWD");
-    strcpy(PORT, "9998");
+    strcpy(PORT, "9997");
 
     int slot = 0; // We start at client slot 0
 
@@ -63,15 +65,19 @@ int main(int argc, char *argv[]) {
     // ACCEPT connections
     while (1) {
         addrlen = sizeof(clientaddr);
+
+        // Wait for a connection an open a new socket
         clients[slot] = accept(listenfd, (struct sockaddr *) &clientaddr, &addrlen);
 
         if (clients[slot] < 0)
             error("accept() error");
         else {
+            consoleRespond(slot);
+            /*
             if (fork() == 0) {
                 respond(slot);
                 exit(0);
-            }
+            }*/
         }
 
         while (clients[slot] != -1) slot = (slot + 1) % CONNMAX;
@@ -143,13 +149,43 @@ void startServer(char *port) {
     }
 }
 
+void consoleRespond(int n) {
+    char mesg[99999], *reqline[3], data_to_send[BYTES], path[99999];
+    int rcvd, fd, bytes_read;
+
+    // Fill a block of bytes with value (int) '\0'
+    memset((void *) mesg, (int) '\0', 99999);
+
+    // Receive data from client and write it to buffer mesg, defined the length of the buffer
+    rcvd = recv(clients[n], mesg, 99999, 0);
+
+    if (rcvd < 0)    // receive error
+        fprintf(stderr, ("recv() error\n"));
+    else if (rcvd == 0)    // receive socket closed
+        fprintf(stderr, "Client disconnected upexpectedly.\n");
+    else    // message received
+    {
+        printf("%s", mesg);
+        char reply[] = "I'm connected.";
+        int bytesize = sizeof(reply);
+        write(clients[n], reply, bytesize);
+    }
+
+    //Closing SOCKET
+    shutdown(clients[n], SHUT_RDWR);         //All further send and recieve operations are DISABLED...
+    close(clients[n]);
+    clients[n] = -1;
+}
+
 //client connection
 void respond(int n) {
     char mesg[99999], *reqline[3], data_to_send[BYTES], path[99999];
     int rcvd, fd, bytes_read;
 
+    // Fill a block of bytes with value (int) '\0'
     memset((void *) mesg, (int) '\0', 99999);
 
+    // Receive data from client and write it to buffer mesg, defined the length of the buffer
     rcvd = recv(clients[n], mesg, 99999, 0);
 
     if (rcvd < 0)    // receive error
@@ -171,6 +207,8 @@ void respond(int n) {
 
                 strcpy(path, ROOT);
                 strcpy(&path[strlen(ROOT)], reqline[1]);
+                // path now holds the file path
+
                 printf("file: %s\n", path);
 
                 if ((fd = open(path, O_RDONLY)) != -1)    //FILE FOUND
