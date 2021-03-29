@@ -13,15 +13,19 @@
 #define CONNMAX 1000
 #define BYTES 1024
 
+
+// https://www.csd.uoc.gr/~hy556/material/tutorials/cs556-3rd-tutorial.pdf
+
 char *ROOT;
+int isServerMode = 1;
 int listenfd; // file descriptor for the new socket
 int clients[CONNMAX];
 
 void error(char *);
 
-void startServer(char *);
+int connectToServer(char[], char *);
 
-void respond(int);
+void startServer(char *);
 
 void consoleRespond(int);
 
@@ -31,21 +35,19 @@ int main(int argc, char *argv[]) {
     char c;
 
     //Default Values PATH = ~/ and PORT=10000
-    char PORT[6];
-    ROOT = getenv("PWD");
-    strcpy(PORT, "9997");
-
+    char PORT[] = "9001";
     int slot = 0; // We start at client slot 0
 
     //Parsing the command line arguments
-    while ((c = getopt(argc, argv, "p:r:")) != -1)
+    while ((c = getopt(argc, argv, "c:a:")) != -1)
         switch (c) {
-            case 'r':
-                ROOT = malloc(strlen(optarg));
-                strcpy(ROOT, optarg);
+            case 'c':
+                strcpy(PORT, argv[2]);
+                isServerMode = 0;
                 break;
-            case 'p':
-                strcpy(PORT, optarg);
+            case 'a':
+                strcpy(PORT, argv[2]);
+                isServerMode = 1;
                 break;
             case '?':
                 fprintf(stderr, "Wrong arguments given!!!\n");
@@ -54,13 +56,15 @@ int main(int argc, char *argv[]) {
                 exit(1);
         }
 
-    printf("Server started at port no. %s%s%s with root directory as %s%s%s\n", "\033[92m", PORT, "\033[0m", "\033[92m",
-           ROOT, "\033[0m");
-
-    for (int i = 0; i < CONNMAX; i++)
-        clients[i] = -1;
-
-    startServer(PORT);
+    if (isServerMode) {
+        startServer(PORT);
+        for (int i = 0; i < CONNMAX; i++)
+            clients[i] = -1;
+        printf("Server started at port no. %s%s%s with root directory as %s%s%s\n", "\033[92m", PORT, "\033[0m", "\033[92m",
+               ROOT, "\033[0m");
+    } else {
+        connectToServer("127.0.0.1", PORT);
+    }
 
     // ACCEPT connections
     while (1) {
@@ -73,11 +77,6 @@ int main(int argc, char *argv[]) {
             error("accept() error");
         else {
             consoleRespond(slot);
-            /*
-            if (fork() == 0) {
-                respond(slot);
-                exit(0);
-            }*/
         }
 
         while (clients[slot] != -1) slot = (slot + 1) % CONNMAX;
@@ -94,7 +93,6 @@ void startServer(char *port) {
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;              // IP protocol family
     hints.ai_socktype = SOCK_STREAM;        // Sequenced, reliable, connection-based byte streams
-    hints.ai_flags = AI_PASSIVE;            // Socket address is intended for `bind'
 
     /*
      * hostname parameter for getaddrinfo:
@@ -139,11 +137,11 @@ void startServer(char *port) {
     freeaddrinfo(res);
 
 
-     /* listen()
-            Prepare to accept connections on socket FD.
-            N connection requests will be queued before further requests are refused.
-     */
-    if (listen(listenfd, 1000000) != 0) {
+    /* listen()
+           Prepare to accept connections on socket FD.
+           N connection requests will be queued before further requests are refused.
+    */
+    if (listen(listenfd, 1) != 0) {
         perror("listen() error");
         exit(1);
     }
@@ -177,52 +175,32 @@ void consoleRespond(int n) {
     clients[n] = -1;
 }
 
-//client connection
-void respond(int n) {
-    char mesg[99999], *reqline[3], data_to_send[BYTES], path[99999];
-    int rcvd, fd, bytes_read;
+int connectToServer(char ip[], char *port) {
+    int socket_desc;
+    struct sockaddr_in server;
 
-    // Fill a block of bytes with value (int) '\0'
-    memset((void *) mesg, (int) '\0', 99999);
-
-    // Receive data from client and write it to buffer mesg, defined the length of the buffer
-    rcvd = recv(clients[n], mesg, 99999, 0);
-
-    if (rcvd < 0)    // receive error
-        fprintf(stderr, ("recv() error\n"));
-    else if (rcvd == 0)    // receive socket closed
-        fprintf(stderr, "Client disconnected upexpectedly.\n");
-    else    // message received
-    {
-        printf("%s", mesg);
-        reqline[0] = strtok(mesg, " \t\n");
-        if (strncmp(reqline[0], "GET\0", 4) == 0) {
-            reqline[1] = strtok(NULL, " \t");
-            reqline[2] = strtok(NULL, " \t\n");
-            if (strncmp(reqline[2], "HTTP/1.0", 8) != 0 && strncmp(reqline[2], "HTTP/1.1", 8) != 0) {
-                write(clients[n], "HTTP/1.0 400 Bad Request\n", 25);
-            } else {
-                if (strncmp(reqline[1], "/\0", 2) == 0)
-                    reqline[1] = "/index.html";        //Because if no file is specified, index.html will be opened by default (like it happens in APACHE...
-
-                strcpy(path, ROOT);
-                strcpy(&path[strlen(ROOT)], reqline[1]);
-                // path now holds the file path
-
-                printf("file: %s\n", path);
-
-                if ((fd = open(path, O_RDONLY)) != -1)    //FILE FOUND
-                {
-                    send(clients[n], "HTTP/1.0 200 OK\n\n", 17, 0);
-                    while ((bytes_read = read(fd, data_to_send, BYTES)) > 0)
-                        write(clients[n], data_to_send, bytes_read);
-                } else write(clients[n], "HTTP/1.0 404 Not Found\n", 23); //FILE NOT FOUND
-            }
-        }
+    //Create socket
+    socket_desc = socket(AF_INET, SOCK_STREAM, 0);
+    if (socket_desc == -1) {
+        printf("Could not create socket");
     }
 
-    //Closing SOCKET
-    shutdown(clients[n], SHUT_RDWR);         //All further send and recieve operations are DISABLED...
-    close(clients[n]);
-    clients[n] = -1;
+    server.sin_addr.s_addr = inet_addr("127.0.0.1");
+    server.sin_family = AF_INET;
+    int intPort = sscanf(port, "%d", &intPort);
+    server.sin_port = htons(intPort);
+
+    //Connect to remote server
+    int tryConnect = connect(socket_desc, (struct sockaddr *) &server, sizeof(server));
+    if (tryConnect < 0) {
+        puts("connect error");
+        return 1;
+    }
+    puts("Connected");
+
+    char reply[] = "MSG.";
+    int bytesize = sizeof(reply);
+    write(socket_desc, reply, bytesize);
+    return 0;
+
 }
