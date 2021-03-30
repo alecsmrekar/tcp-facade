@@ -74,9 +74,11 @@ int main(int argc, char *argv[]) {
         else {
             consoleRespond(slot);
         }
-
-        while (clients[slot] != -1) slot = (slot + 1) % CONNMAX;
     }
+    //Closing SOCKET
+    shutdown(clients[slot], SHUT_RDWR);         //All further send and recieve operations are DISABLED...
+    close(clients[slot]);
+    clients[slot] = -1;
     return 0;
 }
 
@@ -150,25 +152,24 @@ void consoleRespond(int n) {
     // Fill a block of bytes with value (int) '\0'
     memset((void *) mesg, (int) '\0', 99999);
 
-    // Receive data from client and write it to buffer mesg, defined the length of the buffer
-    rcvd = recv(clients[n], mesg, 99999, 0);
+    int isClientConnected = 1;
+    while (isClientConnected) {
+        // Receive data from client and write it to buffer mesg, defined the length of the buffer
+        rcvd = recv(clients[n], mesg, 99999, 0);
 
-    if (rcvd < 0)    // receive error
-        fprintf(stderr, ("recv() error\n"));
-    else if (rcvd == 0)    // receive socket closed
-        fprintf(stderr, "Client disconnected upexpectedly.\n");
-    else    // message received
-    {
-        fprintf(stdout, "%s\n", mesg);
-        char reply[] = "I'm connected.";
-        int bytesize = sizeof(reply);
-        write(clients[n], reply, bytesize);
+        if (rcvd < 0) {    // receive error
+            fprintf(stderr, ("recv() error\n"));
+        } else if (rcvd == 0) {    // receive socket closed
+            fprintf(stderr, "Client disconnected upexpectedly.\n");
+            isClientConnected = 0;
+        } else    // message received
+        {
+            fprintf(stdout, "%s\n", mesg);
+            char reply[] = "I'm connected.";
+            int bytesize = sizeof(reply);
+            write(clients[n], reply, bytesize);
+        }
     }
-
-    //Closing SOCKET
-    shutdown(clients[n], SHUT_RDWR);         //All further send and recieve operations are DISABLED...
-    close(clients[n]);
-    clients[n] = -1;
 }
 
 int connectToServer(char ip[], char *port) {
@@ -178,7 +179,7 @@ int connectToServer(char ip[], char *port) {
     //Create socket
     socket_desc = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_desc == -1) {
-        fprintf(stdout,"Could not create socket");
+        fprintf(stdout, "Could not create socket");
     }
 
     server.sin_addr.s_addr = inet_addr("127.0.0.1");
@@ -195,11 +196,15 @@ int connectToServer(char ip[], char *port) {
         puts("connect error");
         return 1;
     }
-    puts("Connected");
+    puts("Connected\n");
 
-    char reply[] = "MSG.";
-    int bytesize = sizeof(reply);
-    write(socket_desc, reply, bytesize);
+
+    char reply[100];
+    for (;;) {
+        fprintf(stdout, "# ");
+        scanf("%s", reply);
+        int bytesize = sizeof(reply);
+        write(socket_desc, reply, bytesize);
+    }
     return 0;
-
 }
