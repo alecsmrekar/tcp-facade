@@ -34,7 +34,6 @@ int main(int argc, char *argv[]) {
     socklen_t addrlen;              // client address length
     char c;
 
-    //Default Values PATH = ~/ and PORT=10000
     char PORT[] = "9001";
     int slot = 0; // We start at client slot 0
 
@@ -60,20 +59,16 @@ int main(int argc, char *argv[]) {
         startServer(PORT);
         for (int i = 0; i < CONNMAX; i++)
             clients[i] = -1;
-        fflush(stdout);
         printf("Server started at port no. %s\n", PORT);
-        fflush(stdout);
-        printf("TEST2");
     } else {
         connectToServer("127.0.0.1", PORT);
     }
 
     // ACCEPT connections
-    while (1) {
+    while (isServerMode) {
         addrlen = sizeof(clientaddr);
         // Wait for a connection an open a new socket
         clients[slot] = accept(listenfd, (struct sockaddr *) &clientaddr, &addrlen);
-
         if (clients[slot] < 0)
             error("accept() error");
         else {
@@ -141,7 +136,8 @@ void startServer(char *port) {
            Prepare to accept connections on socket FD.
            N connection requests will be queued before further requests are refused.
     */
-    if (listen(listenfd, 1) != 0) {
+    int listenResult = listen(listenfd, 1);
+    if (listenResult != 0) {
         perror("listen() error");
         exit(1);
     }
@@ -163,8 +159,7 @@ void consoleRespond(int n) {
         fprintf(stderr, "Client disconnected upexpectedly.\n");
     else    // message received
     {
-        printf("%s", mesg);
-        printf("TEST");
+        fprintf(stdout, "%s\n", mesg);
         char reply[] = "I'm connected.";
         int bytesize = sizeof(reply);
         write(clients[n], reply, bytesize);
@@ -183,7 +178,7 @@ int connectToServer(char ip[], char *port) {
     //Create socket
     socket_desc = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_desc == -1) {
-        printf("Could not create socket");
+        fprintf(stdout,"Could not create socket");
     }
 
     server.sin_addr.s_addr = inet_addr("127.0.0.1");
