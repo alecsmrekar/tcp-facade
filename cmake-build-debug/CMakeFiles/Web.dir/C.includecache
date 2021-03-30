@@ -29,4 +29,18 @@ signal.h
 -
 fcntl.h
 -
+unistd.h
+-
+stdio.h
+-
+sys/select.h
+-
+termios.h
+-
+unistd.h
+-
+stdio.h
+-
+sys/time.h
+-
 
