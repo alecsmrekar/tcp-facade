@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include<stdio.h>
 #include<sys/time.h>
+#include <signal.h>
 
 
 #define CONNMAX 2
@@ -39,35 +40,36 @@ void startServer(char *);
 
 void consoleRespond(int);
 
+static int keepRunning = 1;
+
+void sighandler(int dummy) {
+    keepRunning = 0;
+}
+
 //https://github.com/zrafa/onscreenkeyboard/blob/master/key.c
-int kbhit()
-{
+int kbhit() {
     struct timeval tv;
     fd_set fds;
     tv.tv_sec = 0;
     tv.tv_usec = 0;
     FD_ZERO(&fds);
     FD_SET(STDIN_FILENO, &fds); //STDIN_FILENO is 0
-    select(STDIN_FILENO+1, &fds, NULL, NULL, &tv);
+    select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv);
     return FD_ISSET(STDIN_FILENO, &fds);
 }
 
-void nonblock(int state)
-{
+void nonblock(int state) {
     struct termios ttystate;
 
     //get the terminal state
     tcgetattr(STDIN_FILENO, &ttystate);
 
-    if (state==NB_ENABLE)
-    {
+    if (state == NB_ENABLE) {
         //turn off canonical mode
         ttystate.c_lflag &= ~ICANON;
         //minimum of number input read.
         ttystate.c_cc[VMIN] = 1;
-    }
-    else if (state==NB_DISABLE)
-    {
+    } else if (state == NB_DISABLE) {
         //turn on canonical mode
         ttystate.c_lflag |= ICANON;
     }
@@ -77,26 +79,9 @@ void nonblock(int state)
 }
 
 int main(int argc, char *argv[]) {
-    char ci;
-    int i=0;
-
-    nonblock(NB_ENABLE);
-    while(!i)
-    {
-        usleep(1);
-        i=kbhit();
-        if (i!=0)
-        {
-            ci=fgetc(stdin);
-            if (ci=='q')
-                i=1;
-            else
-                i=0;
-        }
-    }
-    printf("\n you hit %c. \n",ci);
-    nonblock(NB_DISABLE);
-
+    struct sigaction act;
+    act.sa_handler = sighandler;
+    sigaction(SIGINT, &act, NULL);
 
     struct sockaddr_in clientaddr; // Structure describing an Internet socket address
     socklen_t addrlen;              // client address length
@@ -123,31 +108,48 @@ int main(int argc, char *argv[]) {
                 exit(1);
         }
 
-    if (isServerMode) {
-        startServer(PORT);
-        for (int i = 0; i < CONNMAX; i++)
-            clients[i] = -1;
-        printf("Server started at port no. %s\n", PORT);
-    } else {
-        connectToServer("127.0.0.1", PORT);
-    }
+    int socketUsed;
+    while (keepRunning) {
+        if (isServerMode) {
+            startServer(PORT);
+            printf("Server started at port no. %s\n", PORT);
+            addrlen = sizeof(clientaddr);
+            socketUsed = accept(listenfd, (struct sockaddr *) &clientaddr, &addrlen);
+            if (socketUsed < 0) {
+                error("accept() error");
+            }
+            fprintf(stdout, "A client is attached\n");
+        } else {
+            socketUsed = connectToServer("127.0.0.1", PORT);
+            fprintf(stdout, "Connected to server\n");
+        }
 
-    // ACCEPT connections
-    while (isServerMode) {
-        addrlen = sizeof(clientaddr);
-        // Wait for a connection an open a new socket
-        clients[slot] = accept(listenfd, (struct sockaddr *) &clientaddr, &addrlen);
-        if (clients[slot] < 0)
-            error("accept() error");
-        else {
-            consoleRespond(slot);
+        char reply[100];
+
+        /*
+         * Launch 2 thread in order to have non-blocking IO
+         * The child thread handles incoming packets
+         * The parent thread handles stdin and sending
+         */
+        if (fork() == 0) {
+            consoleRespond(socketUsed);
+            fprintf(stdout, "Killing consoleRespond thread\n");
+            keepRunning = 0;
+        } else {
+            while (keepRunning){
+                fprintf(stdout, "# ");
+                scanf("%s", reply);
+                int bytesize = sizeof(reply);
+                write(socketUsed, reply, bytesize);
+            }
         }
     }
+
     //Closing SOCKET
-    shutdown(clients[slot], SHUT_RDWR);         //All further send and recieve operations are DISABLED...
-    close(clients[slot]);
-    clients[slot] = -1;
-    return 0;
+    shutdown(socketUsed, SHUT_RDWR);
+    close(socketUsed);
+    fprintf(stdout, "Closing socket and shutting down.\n");
+    return EXIT_SUCCESS;
 }
 
 //start server
@@ -213,7 +215,7 @@ void startServer(char *port) {
     }
 }
 
-void consoleRespond(int n) {
+void consoleRespond(int socketDesc) {
     char mesg[99999], *reqline[3], data_to_send[BYTES], path[99999];
     int rcvd, fd, bytes_read;
 
@@ -223,21 +225,40 @@ void consoleRespond(int n) {
     int isClientConnected = 1;
     while (isClientConnected) {
         // Receive data from client and write it to buffer mesg, defined the length of the buffer
-        rcvd = recv(clients[n], mesg, 99999, 0);
+        rcvd = recv(socketDesc, mesg, 99999, 0);
 
         if (rcvd < 0) {    // receive error
             fprintf(stderr, ("recv() error\n"));
+            isClientConnected = 0;
         } else if (rcvd == 0) {    // receive socket closed
             fprintf(stderr, "Client disconnected upexpectedly.\n");
             isClientConnected = 0;
         } else    // message received
         {
-            fprintf(stdout, "%s\n", mesg);
-            char reply[] = "I'm connected.";
+            fprintf(stdout, "> %s\n", mesg);
+            /*char reply[] = "I'm connected.";
             int bytesize = sizeof(reply);
-            write(clients[n], reply, bytesize);
+            write(socketDesc, reply, bytesize);*/
         }
     }
+
+
+/*
+    char input;
+    int isQuit = 0;
+    nonblock(NB_ENABLE);
+    while (!isQuit) {
+        usleep(1);
+        isQuit = kbhit();
+        if (isQuit != 0) {
+            input = fgetc(stdin);
+            if (input == 'q')
+                isQuit = 1;
+            else
+                isQuit = 0;
+        }
+    }
+    nonblock(NB_DISABLE);*/
 }
 
 int connectToServer(char ip[], char *port) {
@@ -264,15 +285,5 @@ int connectToServer(char ip[], char *port) {
         puts("connect error");
         return 1;
     }
-    puts("Connected\n");
-
-
-    char reply[100];
-    for (;;) {
-        fprintf(stdout, "# ");
-        scanf("%s", reply);
-        int bytesize = sizeof(reply);
-        write(socket_desc, reply, bytesize);
-    }
-    return 0;
+    return socket_desc;
 }
