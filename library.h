@@ -5,7 +5,7 @@ void startServing(char *, int *);
 
 extern int awaitConnections(int);
 
-int connectToSocket(int);
+int connectToSocket(char[], char[]);
 
 extern int openSocketConnection(char[], int);
 

@@ -12,11 +12,7 @@ int isVerbose = 0;
 struct sockaddr_in clientaddr; // Structure describing an Internet socket address
 socklen_t addrlen;              // client address length
 
-int connectToSocket(int verbose) {
-    isVerbose = verbose;
-    char portChar[] = "9000"; // TODO convert arg into string
-    char charIP[] = "127.0.0.1"; // TODO convert arg to char
-
+int connectToSocket(char portChar[], char charIP[]) {
     int socket_desc;
     struct sockaddr_in server;
 
