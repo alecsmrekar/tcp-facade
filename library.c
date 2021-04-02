@@ -39,8 +39,7 @@ int connectToSocket(char portChar[], char charIP[]) {
     return socket_desc;
 }
 
-int openSocketConnection (char portChar[], int verbose) {
-    isVerbose = verbose;
+int openSocketConnection (char portChar[]) {
     int socketFD; // New socket file descriptor
     startServing(portChar, &socketFD);
     printf("Server started at port no. %s\n", portChar);

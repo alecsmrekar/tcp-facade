@@ -7,6 +7,6 @@ extern int awaitConnections(int);
 
 int connectToSocket(char[], char[]);
 
-extern int openSocketConnection(char[], int);
+extern int openSocketConnection(char[]);
 
 #endif //SOCKETFACADE_LIBRARY_H

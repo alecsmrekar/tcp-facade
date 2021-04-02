@@ -6,6 +6,24 @@
 
 #IncludeRegexTransform: 
 
+/home/alec/CLionProjects/Web/library.c
+stdio.h
+-
+string.h
+-
+stdlib.h
+-
+unistd.h
+-
+sys/socket.h
+-
+arpa/inet.h
+-
+netdb.h
+-
+library.h
+/home/alec/CLionProjects/Web/library.h
+
 /home/alec/CLionProjects/Web/library.h
 
 /home/alec/CLionProjects/Web/main.c

@@ -3,7 +3,7 @@
 #include<unistd.h>
 
 void serve(char port[]) {
-    int serv = openSocketConnection(port, 0);
+    int serv = openSocketConnection(port);
     int connection = awaitConnections(serv);
     if (connection != -1) {
         printf("\nSomeone connected successfully\n");
@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
 
     char c, *port, *host = NULL;
     int cnt = 1, isServer = 0;
-    while ((c = getopt(argc, argv, "s:a:")) != -1) {
+    while ((c = getopt(argc, argv, "s:a:h:")) != -1) {
         switch (c) {
             case 's':       // Act as server
                 port = argv[cnt+1];
