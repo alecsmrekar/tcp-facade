@@ -76,6 +76,12 @@
 				</MakeCommands>
 			</Target>
 		</Build>
+		<Unit filename="/home/alec/CLionProjects/Web/library.c">
+			<Option target="Web"/>
+		</Unit>
+		<Unit filename="/home/alec/CLionProjects/Web/library.h">
+			<Option target="Web"/>
+		</Unit>
 		<Unit filename="/home/alec/CLionProjects/Web/main.c">
 			<Option target="Web"/>
 		</Unit>

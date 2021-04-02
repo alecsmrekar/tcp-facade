@@ -143,6 +143,33 @@ Web/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Web.dir/build.make CMakeFiles/Web.dir/build
 .PHONY : Web/fast
 
+library.o: library.c.o
+
+.PHONY : library.o
+
+# target to build an object file
+library.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Web.dir/build.make CMakeFiles/Web.dir/library.c.o
+.PHONY : library.c.o
+
+library.i: library.c.i
+
+.PHONY : library.i
+
+# target to preprocess a source file
+library.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Web.dir/build.make CMakeFiles/Web.dir/library.c.i
+.PHONY : library.c.i
+
+library.s: library.c.s
+
+.PHONY : library.s
+
+# target to generate assembly for a file
+library.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Web.dir/build.make CMakeFiles/Web.dir/library.c.s
+.PHONY : library.c.s
+
 main.o: main.c.o
 
 .PHONY : main.o
@@ -179,6 +206,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... Web"
+	@echo "... library.o"
+	@echo "... library.i"
+	@echo "... library.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"

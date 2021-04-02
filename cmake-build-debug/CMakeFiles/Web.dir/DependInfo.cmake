@@ -4,6 +4,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_C
+  "/home/alec/CLionProjects/Web/library.c" "/home/alec/CLionProjects/Web/cmake-build-debug/CMakeFiles/Web.dir/library.c.o"
   "/home/alec/CLionProjects/Web/main.c" "/home/alec/CLionProjects/Web/cmake-build-debug/CMakeFiles/Web.dir/main.c.o"
   )
 set(CMAKE_C_COMPILER_ID "GNU")

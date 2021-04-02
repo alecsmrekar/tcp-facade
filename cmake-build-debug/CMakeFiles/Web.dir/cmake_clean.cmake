@@ -1,4 +1,5 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/Web.dir/library.c.o"
   "CMakeFiles/Web.dir/main.c.o"
   "Web"
   "Web.pdb"
