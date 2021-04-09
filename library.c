@@ -8,10 +8,12 @@
 
 #include "library.h"
 
-int isVerbose = 0;
 struct sockaddr_in clientaddr; // Structure describing an Internet socket address
 socklen_t addrlen;              // client address length
 
+/*
+ * This is invoked by the client, connects to a remote socket.
+ */
 int connectToSocket(char portChar[], char charIP[]) {
     int socket_desc;
     struct sockaddr_in server;
@@ -39,6 +41,9 @@ int connectToSocket(char portChar[], char charIP[]) {
     return socket_desc;
 }
 
+/*
+ * This func is called by the client to initialize a port socket.
+ */
 int openSocketConnection (char portChar[]) {
     int socketFD; // New socket file descriptor
     startServing(portChar, &socketFD);
@@ -46,12 +51,18 @@ int openSocketConnection (char portChar[]) {
     return socketFD;
 }
 
+/*
+ * This is a blocking call invoked by the client to accept incoming connections
+ */
 int awaitConnections (int socketFD) {
     addrlen = sizeof(clientaddr);
     int connection = accept(socketFD, (struct sockaddr *) &clientaddr, &addrlen);
     return connection;
 }
 
+/*
+ * This performs the socket binding
+ */
 void startServing(char *port, int *socketFD) {
     struct addrinfo hints, *res, *p;
 

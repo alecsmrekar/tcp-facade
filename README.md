@@ -1,7 +1,7 @@
 ## TCP Connection Facade in C
 This is a simple collections of methods that allows a user to establish a network with a remote machine via TCP. The program can operate in either server or client mode.
 
-`main.c` showcases how the library can be used.
+`main.c` showcases how the library can be used. Run it with:
 
 #### Server mode
 For running a server, you only need to specify which port number the socket should be bound to. The method is: 

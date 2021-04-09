@@ -1,1 +1,1 @@
-/usr/bin/cc -g   CMakeFiles/Web.dir/main.c.o CMakeFiles/Web.dir/library.c.o  -o Web 
+/usr/bin/cc -g CMakeFiles/Web.dir/main.c.o CMakeFiles/Web.dir/library.c.o -o Web 
