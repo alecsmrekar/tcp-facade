@@ -46,9 +46,12 @@ int connectToSocket(char portChar[], char charIP[]) {
  */
 int openSocketConnection (char portChar[]) {
     int socketFD; // New socket file descriptor
-    startServing(portChar, &socketFD);
-    printf("Server started at port no. %s\n", portChar);
-    return socketFD;
+    int serving = startServing(portChar, &socketFD);
+    if (serving == 0) {
+        printf("Server started at port no. %s\n", portChar);
+        return socketFD;
+    }
+    return -1;
 }
 
 /*
@@ -63,7 +66,7 @@ int awaitConnections (int socketFD) {
 /*
  * This performs the socket binding
  */
-void startServing(char *port, int *socketFD) {
+int startServing(char *port, int *socketFD) {
     struct addrinfo hints, *res, *p;
 
     // getaddrinfo for host
@@ -123,4 +126,5 @@ void startServing(char *port, int *socketFD) {
         perror("listen() error");
         return -1;
     }
+    return 0;
 }

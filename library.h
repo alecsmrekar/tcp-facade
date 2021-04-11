@@ -1,7 +1,7 @@
 #ifndef SOCKETFACADE_LIBRARY_H
 #define SOCKETFACADE_LIBRARY_H
 
-void startServing(char *, int *);
+int startServing(char *, int *);
 
 extern int awaitConnections(int);
 

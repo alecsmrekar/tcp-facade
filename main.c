@@ -4,20 +4,24 @@
 
 void serve(char port[]) {
     int serv = openSocketConnection(port);
-    int connection = awaitConnections(serv);
-    if (connection != -1) {
-        printf("\nSomeone connected successfully\n");
-        char reply[] = "Welcome!";
-        int success = write(connection, reply, sizeof(reply));
-        if (success > -1) {
-            printf("Sent welcome message.\n");
-        }
-        else {
-            printf("Failed sending welcome message.\n");
+    int connection = -1;
+    if (serv != -1) {
+        connection = awaitConnections(serv);
+        if (connection != -1) {
+            printf("\nSomeone connected successfully\n");
+            char reply[] = "Welcome!";
+            int success = write(connection, reply, sizeof(reply));
+            if (success > -1) {
+                printf("Sent welcome message.\n");
+            } else {
+                printf("Failed sending welcome message.\n");
+            }
         }
     }
-    else {
+    if (serv == -1) {
         printf("Unable to open socket\n");
+    } else if (connection == -1) {
+        printf("Unable to listen for incoming connections\n");
     }
 }
 
@@ -63,7 +67,7 @@ int main(int argc, char *argv[]) {
             default:
                 break;
         }
-        cnt++;
+        cnt = cnt + 2;
     }
 
     if (!host) {
